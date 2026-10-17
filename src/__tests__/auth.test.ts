@@ -10,6 +10,12 @@ describe('Auth', () => {
     users.clear();
   });
 
+  it('exposes health endpoint', async () => {
+    const res = await request(app).get('/health');
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('ok');
+  });
+
   it('registers and logs in', async () => {
     const email = 'test@example.com';
     const password = 'secret123';

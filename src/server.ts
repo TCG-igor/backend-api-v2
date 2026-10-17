@@ -5,11 +5,20 @@ import authRoutes from './routes/auth';
 
 dotenv.config();
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+export function createApp(env: Record<string, any> = process.env) {
+  const app = express();
+  app.use(cors());
+  app.use(express.json());
 
-app.use('/api/auth', authRoutes);
+  app.get('/health', (_req, res) => {
+    res.json({ status: 'ok', service: 'atria-tcg-backend', database: env.DATABASE_URL ? 'configured' : 'memory-fallback' });
+  });
+
+  app.use('/api/auth', authRoutes);
+  return app;
+}
+
+const app = createApp();
 
 const port = process.env.PORT || 3333;
 if (require.main === module) {

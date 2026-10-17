@@ -1,0 +1,12 @@
+name = "atria-tcg-backend"
+main = "src/worker.ts"
+compatibility_date = "2024-06-20"
+
+[vars]
+JWT_SECRET = "replace-with-a-cloudflare-secret"
+BREVO_API_KEY = ""
+BREVO_SENDER_EMAIL = "no-reply@example.com"
+
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "replace-with-your-hyperdrive-id"

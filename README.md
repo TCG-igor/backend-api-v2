@@ -1,12 +1,14 @@
 # Átria TCG Backend API
 
-Backend MVP em Node.js + TypeScript para autenticação, verificação de e-mail, recuperação de senha, criação de empresa/loja e aprovação administrativa.
+Backend em Node.js + TypeScript para autenticação, verificação de e-mail, recuperação de senha, criação de empresa/loja e aprovação administrativa.
 
 ## Stack
 
 - Node.js 20+
 - TypeScript
-- Express
+- Express (runtime local)
+- PostgreSQL + Hyperdrive (produção/Cloudflare)
+- Cloudflare Worker entrypoint
 - JWT
 - bcryptjs
 - Jest + Supertest
@@ -15,16 +17,12 @@ Backend MVP em Node.js + TypeScript para autenticação, verificação de e-mail
 
 - Node.js 20+
 - npm
+- PostgreSQL local ou Hyperdrive configurado para produção
 
 ## Instalação
 
 ```bash
 npm install
-```
-
-Crie um arquivo `.env` baseado em `.env.example`:
-
-```bash
 cp .env.example .env
 ```
 
@@ -32,26 +30,61 @@ cp .env.example .env
 
 ```env
 PORT=3333
-JWT_SECRET=troque-esta-chave
+JWT_SECRET=replace-with-a-long-random-secret
 BREVO_API_KEY=
+BREVO_SENDER_EMAIL=no-reply@example.com
+DATABASE_URL=postgres://USER:PASSWORD@HOST:5432/DATABASE?sslmode=disable
+HYPERDRIVE_CONNECTION_STRING=postgres://USER:PASSWORD@HOST:5432/DATABASE?sslmode=disable
 ```
 
-Quando `BREVO_API_KEY` estiver vazia, o serviço de e-mail entra em modo mock e registra logs no console em vez de enviar mensagens reais.
+Em produção, o runtime Cloudflare Worker lê o binding `HYPERDRIVE.connectionString` e o Node local usa `DATABASE_URL` quando configurado. Sem banco configurado, a API cai em modo fallback em memória para desenvolvimento e testes locais.
+
+## Health check
+
+- `GET /health`
+
+Resposta esperada:
+
+```json
+{ "status": "ok", "service": "atria-tcg-backend", "database": "configured" }
+```
 
 ## Como executar
 
-Desenvolvimento:
+Desenvolvimento local:
 
 ```bash
 npm run dev
 ```
 
-Produção:
+Produção local (Node):
 
 ```bash
 npm run build
 npm start
 ```
+
+Deploy em Cloudflare Worker:
+
+```bash
+npx wrangler deploy
+```
+
+## PostgreSQL / Hyperdrive
+
+A pasta `src/db` contém a preparação de conexão e o schema inicial para as tabelas principais:
+
+- users
+- verification_tokens
+- recovery_tokens
+- companies
+- shops
+- shop_drafts
+- shop_history
+- user_draft_index
+- submitted_drafts
+
+O objetivo é manter os contratos HTTP atuais e trocar apenas a camada de persistência. A migration SQL está definida em `src/db/postgres.ts` e pode ser usada para criar a base em ambiente real.
 
 ## Endpoints principais
 
@@ -80,9 +113,10 @@ npm start
 
 ## Observações
 
-- A implementação atual usa armazenamento em memória, adequado para MVP e testes.
-- A autorização administrativa é feita via `isAdmin` no usuário autenticado.
-- O fluxo de e-mail usa Brevo quando a chave está configurada; sem chave, segue em modo mock para ambiente local.
+- A API mantém os endpoints e respostas esperados do MVP.
+- A autorização administrativa segue por `isAdmin` no usuário autenticado.
+- O envio de e-mail usa Brevo quando a chave está configurada; sem chave, entra em modo mock para ambiente local.
+- O runtime de worker evita `app.listen()` em ambientes serverless.
 
 ## Testes
 
